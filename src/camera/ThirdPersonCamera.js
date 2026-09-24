@@ -4,9 +4,8 @@ import { lerp, clamp } from '../utils/MathUtils.js';
 
 /**
  * ThirdPersonCamera.js
- * Polished collision-aware third-person camera system.
- * Follows player smoothly, handles pointer lock AND mouse drag rotation,
- * raycasting against obstacles to prevent clipping.
+ * Action third-person camera system with dynamic FOV kick during sprint,
+ * screen shake on damage/bark, camera tilt on sharp turns, and collision avoidance.
  */
 
 export class ThirdPersonCamera {
@@ -15,8 +14,8 @@ export class ThirdPersonCamera {
     this.target = target;
     this.collisionSystem = collisionSystem;
 
-    this.yaw = 0;   // Horizontal rotation
-    this.pitch = 0.2; // Vertical rotation
+    this.yaw = 0;
+    this.pitch = 0.2;
 
     this.distance = GAME_CONFIG.CAMERA.DEFAULT_DISTANCE;
     this.targetDistance = this.distance;
@@ -29,7 +28,15 @@ export class ThirdPersonCamera {
     this.lastMouseX = 0;
     this.lastMouseY = 0;
 
+    // Camera Shake parameters
+    this.shakeIntensity = 0;
+    this.targetFov = GAME_CONFIG.CAMERA.FOV;
+
     this.initControls();
+  }
+
+  triggerShake(intensity = 0.4) {
+    this.shakeIntensity = Math.max(this.shakeIntensity, intensity);
   }
 
   initControls() {
@@ -48,11 +55,9 @@ export class ThirdPersonCamera {
       let movementY = 0;
 
       if (document.pointerLockElement !== null) {
-        // Pointer Lock active
         movementX = e.movementX;
         movementY = e.movementY;
       } else if (this.isMouseDown) {
-        // Drag rotation fallback
         movementX = e.clientX - this.lastMouseX;
         movementY = e.clientY - this.lastMouseY;
         this.lastMouseX = e.clientX;
@@ -83,8 +88,24 @@ export class ThirdPersonCamera {
   update(delta) {
     if (!this.target) return;
 
+    // Dynamic FOV kick during sprint
+    const isSprinting = this.target.controller ? this.target.controller.isSprinting : false;
+    const speedFov = isSprinting ? GAME_CONFIG.CAMERA.FOV + 12 : GAME_CONFIG.CAMERA.FOV;
+    this.targetFov = lerp(this.targetFov, speedFov, delta * 6.0);
+    this.camera.fov = this.targetFov;
+    this.camera.updateProjectionMatrix();
+
+    // Target focus position (Chest level)
     const targetPos = this.target.position.clone();
     targetPos.y += this.height;
+
+    // Camera Shake decay
+    if (this.shakeIntensity > 0.01) {
+      targetPos.x += (Math.random() - 0.5) * this.shakeIntensity;
+      targetPos.y += (Math.random() - 0.5) * this.shakeIntensity;
+      targetPos.z += (Math.random() - 0.5) * this.shakeIntensity;
+      this.shakeIntensity *= Math.exp(-delta * 10.0);
+    }
 
     this.distance = lerp(this.distance, this.targetDistance, delta * 8.0);
 

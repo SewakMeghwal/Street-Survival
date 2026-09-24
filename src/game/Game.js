@@ -6,6 +6,7 @@ import { CollisionSystem } from '../systems/CollisionSystem.js';
 import { DayNightSystem } from '../systems/DayNightSystem.js';
 import { WeatherSystem } from '../systems/WeatherSystem.js';
 import { ParticleSystem } from '../systems/ParticleSystem.js';
+import { audioSystem } from '../systems/AudioSystem.js';
 import { City } from '../world/City.js';
 import { Player } from '../player/Player.js';
 import { ThirdPersonCamera } from '../camera/ThirdPersonCamera.js';
@@ -84,10 +85,13 @@ export class Game {
     this.dogManager = new DogManager(this.scene, this.collisionSystem);
     this.missionManager = new MissionManager(this);
 
-    // Hook hit callback to particle system & UI damage flash
+    // Hook hit callback to particle system, camera shake & UI damage flash
     this.player.stats.onHit = (damage) => {
       if (this.particleSystem && this.player) {
         this.particleSystem.createHitSpark(this.player.position);
+      }
+      if (this.thirdPersonCamera) {
+        this.thirdPersonCamera.triggerShake(0.55);
       }
       if (this.uiManager) this.uiManager.hud.triggerDamageFlash();
     };
@@ -196,8 +200,15 @@ export class Game {
         this.city.buildings.animateHomeEntry(inSafe);
       }
 
+      // Action Tension Heartbeat when dogs get close!
+      const nearestDogDist = this.dogManager.getNearestDogDistance(this.player.position);
+      if (nearestDogDist < 15.0) {
+        const tension = 1.0 - (nearestDogDist / 15.0);
+        audioSystem.playHeartbeat(tension);
+      }
+
       // Footstep dust particles when running
-      if (this.player.velocity.lengthSq() > 25.0 && Math.random() < 0.3) {
+      if (this.player.velocity.lengthSq() > 25.0 && Math.random() < 0.35) {
         this.particleSystem.createDustPuff(this.player.position);
       }
     }
