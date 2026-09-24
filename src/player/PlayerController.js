@@ -2,8 +2,8 @@ import * as THREE from 'three';
 
 /**
  * PlayerController.js
- * Captures keyboard & gamepad input.
- * Fixed sprint input handling across all shift key variants and movement directions.
+ * Captures keyboard, gamepad, and onscreen UI action buttons.
+ * Supports WASD/Arrows, Space jump, Shift sprint, double-tap W sprint, and UI buttons.
  */
 
 export class PlayerController {
@@ -11,6 +11,11 @@ export class PlayerController {
     this.camera = camera;
     this.keys = {};
     this.shiftPressed = false;
+    this.btnSprintActive = false;
+    this.btnJumpRequested = false;
+
+    this.lastWTap = 0;
+    this.doubleTapSprint = false;
 
     this.moveVector = new THREE.Vector3();
     this.isSprinting = false;
@@ -23,8 +28,18 @@ export class PlayerController {
   initEventListeners() {
     window.addEventListener('keydown', (e) => {
       this.keys[e.code] = true;
+
       if (e.key === 'Shift' || e.code === 'ShiftLeft' || e.code === 'ShiftRight' || e.shiftKey) {
         this.shiftPressed = true;
+      }
+
+      // Double-tap W detection for sprint
+      if (e.code === 'KeyW') {
+        const now = performance.now();
+        if (now - this.lastWTap < 300) {
+          this.doubleTapSprint = true;
+        }
+        this.lastWTap = now;
       }
 
       if (e.code === 'KeyC') {
@@ -40,7 +55,32 @@ export class PlayerController {
       if (e.key === 'Shift' || e.code === 'ShiftLeft' || e.code === 'ShiftRight' || !e.shiftKey) {
         this.shiftPressed = false;
       }
+      if (e.code === 'KeyW') {
+        this.doubleTapSprint = false;
+      }
     });
+
+    // Hook UI buttons if present
+    this.bindUIButtons();
+  }
+
+  bindUIButtons() {
+    setTimeout(() => {
+      const sprintBtn = document.getElementById('btn-action-sprint');
+      const jumpBtn = document.getElementById('btn-action-jump');
+
+      if (sprintBtn) {
+        sprintBtn.addEventListener('mousedown', () => { this.btnSprintActive = true; });
+        sprintBtn.addEventListener('mouseup', () => { this.btnSprintActive = false; });
+        sprintBtn.addEventListener('touchstart', (e) => { e.preventDefault(); this.btnSprintActive = true; });
+        sprintBtn.addEventListener('touchend', (e) => { e.preventDefault(); this.btnSprintActive = false; });
+      }
+
+      if (jumpBtn) {
+        jumpBtn.addEventListener('click', () => { this.btnJumpRequested = true; });
+        jumpBtn.addEventListener('touchstart', (e) => { e.preventDefault(); this.btnJumpRequested = true; });
+      }
+    }, 500);
   }
 
   getMovementVector() {
@@ -56,8 +96,13 @@ export class PlayerController {
 
     const isMoving = forward !== 0 || side !== 0;
 
-    // Sprinting triggers when shift is held while moving in any direction
-    this.isSprinting = isMoving && (this.shiftPressed || !!(this.keys['ShiftLeft'] || this.keys['ShiftRight'])) && !this.isCrouching;
+    // Sprinting triggers when Shift is down, double-tap W active, or UI sprint button held
+    this.isSprinting = isMoving && (
+      this.shiftPressed || 
+      this.doubleTapSprint || 
+      this.btnSprintActive || 
+      !!(this.keys['ShiftLeft'] || this.keys['ShiftRight'])
+    ) && !this.isCrouching;
 
     // Gamepad API integration
     const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
@@ -87,8 +132,9 @@ export class PlayerController {
   }
 
   consumeJump() {
-    if (this.jumpRequested) {
+    if (this.jumpRequested || this.btnJumpRequested) {
       this.jumpRequested = false;
+      this.btnJumpRequested = false;
       return true;
     }
     return false;

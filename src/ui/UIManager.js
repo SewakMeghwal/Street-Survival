@@ -3,11 +3,13 @@ import { MainMenu } from './MainMenu.js';
 import { PauseMenu } from './PauseMenu.js';
 import { GameOverUI } from './GameOverUI.js';
 import { DebugUI } from './DebugUI.js';
+import { Minimap } from './Minimap.js';
+import { AuthModal } from './AuthModal.js';
 
 /**
  * UIManager.js
- * Central controller coordinating all screen transitions, HUD updates,
- * pause modals, game over summaries, and debug overlays.
+ * Central controller coordinating screen transitions, HUD updates,
+ * minimap radar rendering, auth modals, and debug overlays.
  */
 
 export class UIManager {
@@ -19,8 +21,17 @@ export class UIManager {
     this.pauseMenu = new PauseMenu(game);
     this.gameOverUI = new GameOverUI(game);
     this.debugUI = new DebugUI();
+    this.minimap = new Minimap();
+    this.authModal = new AuthModal(game);
 
     this.loadingScreen = document.getElementById('loading-screen');
+    this.initAuthButtons();
+  }
+
+  initAuthButtons() {
+    document.getElementById('btn-auth-open')?.addEventListener('click', () => {
+      this.authModal.show();
+    });
   }
 
   hideLoadingScreen() {
@@ -33,11 +44,12 @@ export class UIManager {
     this.hud.hide();
     this.pauseMenu.hide();
     this.gameOverUI.hideAll();
+    this.authModal.updateUserUI();
     this.mainMenu.showScreen('main-menu');
   }
 
   showHUD() {
-    this.mainMenu.showScreen(''); // Hide menus
+    this.mainMenu.showScreen('');
     this.pauseMenu.hide();
     this.gameOverUI.hideAll();
     this.hud.show();
@@ -76,7 +88,11 @@ export class UIManager {
 
     if (dogManager && player) {
       const nearestDist = dogManager.getNearestDogDistance(player.position);
-      this.hud.setDangerRadar(nearestDist < 12.0);
+      this.hud.setDangerRadar(nearestDist < 14.0);
+    }
+
+    if (this.minimap && player) {
+      this.minimap.update(player, dogManager, this.game.city.safeZones, this.game.camera);
     }
 
     this.debugUI.update(perfMonitor, player, dogManager, activeMission);
