@@ -3,79 +3,80 @@ import { TextureGenerator } from './TextureGenerator.js';
 
 /**
  * ProceduralMeshFactory.js
- * Advanced 3D procedural asset generator.
- * Creates organic, textured low-poly models for Players, Dogs,
- * Vehicles, Buildings, Trees, and Props with anatomical articulation and PBR shaders.
+ * High-quality 3D Procedural Asset Generator.
+ * Creates stylized, athletic "Subway Surfers" style runner characters,
+ * realistic quadruped dogs, interactive home doors, vehicles, and neighborhood assets.
  */
 
 export class ProceduralMeshFactory {
 
   // =========================================================================
-  // --- PLAYER MESH GENERATOR (High Detail Stylized Textured Character) ---
+  // --- PLAYER MESH GENERATOR (Subway Surfers / Temple Run Stylized Character) ---
   // =========================================================================
   static createPlayerMesh(gender = 'male') {
     const group = new THREE.Group();
     group.name = `Player_${gender}`;
 
-    // Generate Procedural Canvas Textures
+    // Procedural Canvas Textures
     const faceTex = TextureGenerator.createFaceTexture(gender);
-    const shirtTex = TextureGenerator.createFabricTexture(gender === 'male' ? '#1e50a2' : '#c73e3a');
-    const pantsTex = TextureGenerator.createFabricTexture('#2b303a', true);
+    const hoodieTex = TextureGenerator.createFabricTexture(gender === 'male' ? '#2563eb' : '#ec4899'); // Royal Blue / Hot Pink Hoodie
+    const pantsTex = TextureGenerator.createFabricTexture('#1e293b', true); // Dark Denim
 
-    // PBR Materials with textures
-    const skinMat = new THREE.MeshStandardMaterial({ color: 0xffffff, map: faceTex, roughness: 0.6 });
-    const bodySkinMat = new THREE.MeshStandardMaterial({ color: gender === 'male' ? 0xd99b73 : 0xe5aa85, roughness: 0.6 });
-    const shirtMat = new THREE.MeshStandardMaterial({ map: shirtTex, roughness: 0.5 });
-    const jacketTrimMat = new THREE.MeshStandardMaterial({ color: 0x111622, roughness: 0.4 });
+    // PBR Materials
+    const skinMat = new THREE.MeshStandardMaterial({ map: faceTex, roughness: 0.5 });
+    const bodySkinMat = new THREE.MeshStandardMaterial({ color: gender === 'male' ? 0xd99b73 : 0xe5aa85, roughness: 0.5 });
+    const hoodieMat = new THREE.MeshStandardMaterial({ map: hoodieTex, roughness: 0.5, metalness: 0.05 });
+    const hoodieTrimMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.4 });
     const pantsMat = new THREE.MeshStandardMaterial({ map: pantsTex, roughness: 0.7 });
-    const shoeMat = new THREE.MeshStandardMaterial({ color: 0x141414, roughness: 0.8 });
-    const soleMat = new THREE.MeshStandardMaterial({ color: 0xdddddd, roughness: 0.5 });
+    const sneakerMat = new THREE.MeshStandardMaterial({ color: gender === 'male' ? 0xf8fafc : 0xf43f5e, roughness: 0.4 });
+    const soleMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.6 });
+    const capMat = new THREE.MeshStandardMaterial({ color: gender === 'male' ? 0xd97706 : 0x8b5cf6, roughness: 0.5 });
     const hairMat = new THREE.MeshStandardMaterial({ color: 0x1c1917, roughness: 0.9 });
-    const beltMat = new THREE.MeshStandardMaterial({ color: 0x0f0f0f, roughness: 0.5 });
-    const buckleMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.8, roughness: 0.2 });
+    const drawstringMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
 
-    // --- Pelvis / Hips ---
-    const pelvisGeo = new THREE.CylinderGeometry(0.18, 0.16, 0.18, 12);
+    // --- Pelvis / Waist ---
+    const pelvisGeo = new THREE.CylinderGeometry(0.18, 0.16, 0.18, 14);
     const pelvis = new THREE.Mesh(pelvisGeo, pantsMat);
     pelvis.position.y = 0.88;
     group.add(pelvis);
 
-    // Belt
-    const belt = new THREE.Mesh(new THREE.CylinderGeometry(0.19, 0.19, 0.04, 12), beltMat);
-    belt.position.y = 0.96;
-    const buckle = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.05, 0.03), buckleMat);
-    buckle.position.set(0, 0.96, 0.19);
-    group.add(belt, buckle);
-
-    // --- Torso / Chest ---
-    const torsoHeight = gender === 'male' ? 0.52 : 0.48;
-    const torsoTopR = gender === 'male' ? 0.22 : 0.19;
+    // --- Torso / Hoodie ---
+    const torsoHeight = gender === 'male' ? 0.54 : 0.5;
+    const torsoTopR = gender === 'male' ? 0.23 : 0.2;
     const torsoBotR = 0.18;
-    const torsoGeo = new THREE.CylinderGeometry(torsoTopR, torsoBotR, torsoHeight, 12);
-    const torso = new THREE.Mesh(torsoGeo, shirtMat);
-    torso.position.y = pelvis.position.y + 0.1 + torsoHeight * 0.5;
+    const torsoGeo = new THREE.CylinderGeometry(torsoTopR, torsoBotR, torsoHeight, 14);
+    const torso = new THREE.Mesh(torsoGeo, hoodieMat);
+    torso.position.y = pelvis.position.y + 0.08 + torsoHeight * 0.5;
     group.add(torso);
 
-    // Jacket Zipper & Collar Trim
-    const zipper = new THREE.Mesh(new THREE.BoxGeometry(0.02, torsoHeight, 0.02), jacketTrimMat);
-    zipper.position.set(0, torso.position.y, torsoTopR + 0.01);
-    group.add(zipper);
+    // Hoodie Front Pocket Pouch & Zipper
+    const pouch = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.16, 0.08), hoodieMat);
+    pouch.position.set(0, torso.position.y - 0.1, torsoBotR + 0.02);
+    group.add(pouch);
 
-    const collar = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.15, 0.08, 12), jacketTrimMat);
-    collar.position.y = torso.position.y + torsoHeight * 0.5 + 0.04;
-    group.add(collar);
+    // Hoodie Drawstring Cords
+    const cordL = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.18, 6), drawstringMat);
+    const cordR = cordL.clone();
+    cordL.position.set(-0.06, torso.position.y + 0.1, torsoTopR + 0.02);
+    cordR.position.set(0.06, torso.position.y + 0.1, torsoTopR + 0.02);
+    group.add(cordL, cordR);
 
-    // --- Neck & Head (Head mapped with Face Texture Map) ---
-    const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.08, 0.1, 8), bodySkinMat);
-    neck.position.y = collar.position.y + 0.07;
+    // Hoodie Collar / Hood Bump on back
+    const hoodBump = new THREE.Mesh(new THREE.SphereGeometry(0.16, 10, 10), hoodieMat);
+    hoodBump.scale.set(1.1, 0.7, 0.8);
+    hoodBump.position.set(0, torso.position.y + torsoHeight * 0.45, -0.12);
+    group.add(hoodBump);
+
+    // --- Neck & Head ---
+    const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.085, 0.1, 8), bodySkinMat);
+    neck.position.y = torso.position.y + torsoHeight * 0.5 + 0.05;
     group.add(neck);
 
     const headGroup = new THREE.Group();
-    headGroup.position.set(0, neck.position.y + 0.12, 0);
+    headGroup.position.set(0, neck.position.y + 0.13, 0);
 
-    const headGeo = new THREE.SphereGeometry(0.13, 16, 16);
-    // Rotate texture mapping forward
-    headGeo.rotateY(Math.PI / 2);
+    const headGeo = new THREE.SphereGeometry(0.135, 16, 16);
+    headGeo.rotateY(Math.PI / 2); // Map face texture forward
 
     const head = new THREE.Mesh(headGeo, skinMat);
     headGroup.add(head);
@@ -83,45 +84,54 @@ export class ProceduralMeshFactory {
     // Ears
     const earL = new THREE.Mesh(new THREE.SphereGeometry(0.03, 8, 8), bodySkinMat);
     const earR = earL.clone();
-    earL.position.set(-0.13, 0, 0);
-    earR.position.set(0.13, 0, 0);
+    earL.position.set(-0.135, 0, 0);
+    earR.position.set(0.135, 0, 0);
     headGroup.add(earL, earR);
 
-    // Hair
+    // Cap / Hair (Backwards Baseball Cap for Male, Stylish Ponytail/Cap for Female)
     if (gender === 'male') {
-      const hairTop = new THREE.Mesh(new THREE.SphereGeometry(0.14, 12, 12, 0, Math.PI * 2, 0, Math.PI * 0.55), hairMat);
-      hairTop.position.y = 0.02;
-      headGroup.add(hairTop);
+      const capDome = new THREE.Mesh(new THREE.SphereGeometry(0.142, 12, 12, 0, Math.PI * 2, 0, Math.PI * 0.55), capMat);
+      capDome.position.y = 0.02;
+      // Backwards Cap Visor/Brim
+      const capBrim = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.02, 12, 1, false, 0, Math.PI), capMat);
+      capBrim.rotation.x = 0.2;
+      capBrim.position.set(0, 0.04, -0.14);
+      headGroup.add(capDome, capBrim);
     } else {
-      const hairTop = new THREE.Mesh(new THREE.SphereGeometry(0.145, 12, 12), hairMat);
-      hairTop.position.set(0, 0.02, -0.02);
-      const ponytail = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.01, 0.25, 8), hairMat);
-      ponytail.position.set(0, -0.08, -0.16);
-      ponytail.rotation.x = -0.4;
-      headGroup.add(hairTop, ponytail);
+      const capDome = new THREE.Mesh(new THREE.SphereGeometry(0.144, 12, 12, 0, Math.PI * 2, 0, Math.PI * 0.55), capMat);
+      capDome.position.y = 0.02;
+      const ponytail = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.015, 0.26, 8), hairMat);
+      ponytail.position.set(0, -0.08, -0.17);
+      ponytail.rotation.x = -0.5;
+      headGroup.add(capDome, ponytail);
     }
     group.add(headGroup);
 
-    // --- Articulated Arms (Upper & Lower Arm Groups) ---
+    // --- Articulated Arms (Shoulders + Upper Arm + Forearm + Fists) ---
     const createArm = (side) => {
       const armGroup = new THREE.Group();
       const posX = side === 'left' ? -(torsoTopR + 0.05) : (torsoTopR + 0.05);
       armGroup.position.set(posX, torso.position.y + torsoHeight * 0.4, 0);
 
-      const shoulder = new THREE.Mesh(new THREE.SphereGeometry(0.07, 8, 8), shirtMat);
+      const shoulder = new THREE.Mesh(new THREE.SphereGeometry(0.075, 8, 8), hoodieMat);
       armGroup.add(shoulder);
 
-      const upperArm = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.048, 0.26, 8), shirtMat);
+      const upperArm = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.05, 0.26, 8), hoodieMat);
       upperArm.position.y = -0.13;
       armGroup.add(upperArm);
 
+      // Wrist cuff
+      const cuff = new THREE.Mesh(new THREE.CylinderGeometry(0.052, 0.052, 0.04, 8), hoodieTrimMat);
+      cuff.position.y = -0.25;
+      armGroup.add(cuff);
+
       const forearmGroup = new THREE.Group();
-      forearmGroup.position.set(0, -0.26, 0);
-      const forearm = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.038, 0.24, 8), bodySkinMat);
-      forearm.position.y = -0.12;
-      const hand = new THREE.Mesh(new THREE.SphereGeometry(0.04, 8, 8), bodySkinMat);
-      hand.position.y = -0.24;
-      forearmGroup.add(forearm, hand);
+      forearmGroup.position.set(0, -0.27, 0);
+      const forearm = new THREE.Mesh(new THREE.CylinderGeometry(0.048, 0.04, 0.23, 8), bodySkinMat);
+      forearm.position.y = -0.115;
+      const fist = new THREE.Mesh(new THREE.SphereGeometry(0.042, 8, 8), bodySkinMat);
+      fist.position.y = -0.23;
+      forearmGroup.add(forearm, fist);
 
       armGroup.add(forearmGroup);
       return { main: armGroup, forearm: forearmGroup };
@@ -131,27 +141,28 @@ export class ProceduralMeshFactory {
     const rightArmObj = createArm('right');
     group.add(leftArmObj.main, rightArmObj.main);
 
-    // --- Articulated Legs (Thigh + Shin + Shoe) ---
+    // --- Articulated Legs (Thigh + Shin + Runner Sneakers) ---
     const createLeg = (side) => {
       const legGroup = new THREE.Group();
       const posX = side === 'left' ? -0.11 : 0.11;
       legGroup.position.set(posX, pelvis.position.y - 0.05, 0);
 
-      const thigh = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.06, 0.38, 8), pantsMat);
+      const thigh = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.062, 0.38, 8), pantsMat);
       thigh.position.y = -0.19;
       legGroup.add(thigh);
 
       const shinGroup = new THREE.Group();
       shinGroup.position.set(0, -0.38, 0);
-      const shin = new THREE.Mesh(new THREE.CylinderGeometry(0.058, 0.045, 0.36, 8), pantsMat);
+      const shin = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.048, 0.36, 8), pantsMat);
       shin.position.y = -0.18;
 
-      const shoeUpper = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.09, 0.23), shoeMat);
-      shoeUpper.position.set(0, -0.34, 0.04);
-      const shoeSole = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.03, 0.25), soleMat);
-      shoeSole.position.set(0, -0.39, 0.04);
+      // Subway Surfers style bulky sneakers
+      const sneakerUpper = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.1, 0.25), sneakerMat);
+      sneakerUpper.position.set(0, -0.34, 0.04);
+      const sneakerSole = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.04, 0.27), soleMat);
+      sneakerSole.position.set(0, -0.4, 0.04);
 
-      shinGroup.add(shin, shoeUpper, shoeSole);
+      shinGroup.add(shin, sneakerUpper, sneakerSole);
       legGroup.add(shinGroup);
 
       return { main: legGroup, shin: shinGroup };
@@ -161,7 +172,7 @@ export class ProceduralMeshFactory {
     const rightLegObj = createLeg('right');
     group.add(leftLegObj.main, rightLegObj.main);
 
-    // Shadows setup
+    // Enable Shadows
     group.traverse((child) => {
       if (child.isMesh) {
         child.castShadow = true;
@@ -204,6 +215,7 @@ export class ProceduralMeshFactory {
     const snoutMat = new THREE.MeshStandardMaterial({ color: 0x1f1917, roughness: 0.6 });
     const eyeMat = new THREE.MeshBasicMaterial({ color: config.isLeader ? 0xff0000 : 0xffaa00 });
     const teethMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+    const tongueMat = new THREE.MeshBasicMaterial({ color: 0xe11d48 });
     const collarMat = new THREE.MeshStandardMaterial({
       color: config.isLeader ? 0xcc0000 : 0x2255bb,
       roughness: 0.4
@@ -257,8 +269,12 @@ export class ProceduralMeshFactory {
     noseTip.position.set(0, 0.02 * scale, 0.25 * scale);
     headGroup.add(snout, noseTip);
 
+    // Open Jaw, Tongue & Fangs
     const lowerJaw = new THREE.Mesh(new THREE.BoxGeometry(0.1 * scale, 0.04 * scale, 0.18 * scale), furMat);
     lowerJaw.position.set(0, -0.08 * scale, 0.13 * scale);
+
+    const tongue = new THREE.Mesh(new THREE.BoxGeometry(0.06 * scale, 0.015 * scale, 0.12 * scale), tongueMat);
+    tongue.position.set(0, -0.05 * scale, 0.16 * scale);
 
     const fangL = new THREE.Mesh(new THREE.ConeGeometry(0.012 * scale, 0.04 * scale, 4), teethMat);
     const fangR = fangL.clone();
@@ -266,7 +282,7 @@ export class ProceduralMeshFactory {
     fangR.position.set(0.04 * scale, -0.02 * scale, 0.22 * scale);
     fangL.rotation.x = Math.PI;
     fangR.rotation.x = Math.PI;
-    headGroup.add(lowerJaw, fangL, fangR);
+    headGroup.add(lowerJaw, tongue, fangL, fangR);
 
     const isErectEar = config.name.includes('Hound') || config.isLeader;
     const createEar = (side) => {
@@ -367,14 +383,16 @@ export class ProceduralMeshFactory {
     };
   }
 
-  // --- INDIAN HOUSE GENERATOR ---
+  // --- INDIAN HOUSE & ENTERING HOME DOOR GENERATOR ---
   static createIndianHouse(width = 8, height = 7, depth = 10, wallColor = 0xe0caab) {
     const group = new THREE.Group();
 
     const wallMat = new THREE.MeshStandardMaterial({ color: wallColor, roughness: 0.8 });
     const accentMat = new THREE.MeshStandardMaterial({ color: 0x8c3a27, roughness: 0.7 });
     const windowMat = new THREE.MeshStandardMaterial({ color: 0x1a2b3c, roughness: 0.3, metalness: 0.5 });
-    const doorMat = new THREE.MeshStandardMaterial({ color: 0x5c3a21, roughness: 0.8 });
+    const doorFrameMat = new THREE.MeshStandardMaterial({ color: 0x221510, roughness: 0.7 });
+    const doorLeafMat = new THREE.MeshStandardMaterial({ color: 0x6b3e26, roughness: 0.6 });
+    const handleMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.9, roughness: 0.2 });
 
     const mainBuilding = new THREE.Mesh(new THREE.BoxGeometry(width, height, depth), wallMat);
     mainBuilding.position.y = height / 2;
@@ -384,9 +402,22 @@ export class ProceduralMeshFactory {
     parapet.position.y = height + 0.3;
     group.add(parapet);
 
-    const door = new THREE.Mesh(new THREE.BoxGeometry(1.4, 2.4, 0.1), doorMat);
-    door.position.set(0, 1.2, depth / 2 + 0.05);
-    group.add(door);
+    // Interactive Door Frame & Swinging Door Pivot
+    const doorFrame = new THREE.Mesh(new THREE.BoxGeometry(1.6, 2.6, 0.15), doorFrameMat);
+    doorFrame.position.set(0, 1.3, depth / 2 + 0.06);
+    group.add(doorFrame);
+
+    const doorPivot = new THREE.Group();
+    doorPivot.position.set(-0.7, 1.3, depth / 2 + 0.08); // Hinge on left side
+
+    const doorLeaf = new THREE.Mesh(new THREE.BoxGeometry(1.4, 2.4, 0.08), doorLeafMat);
+    doorLeaf.position.set(0.7, 0, 0); // Offset leaf center from hinge
+
+    const handle = new THREE.Mesh(new THREE.SphereGeometry(0.045, 8, 8), handleMat);
+    handle.position.set(1.25, 0, 0.06);
+
+    doorPivot.add(doorLeaf, handle);
+    group.add(doorPivot);
 
     const windowGeo = new THREE.BoxGeometry(1.2, 1.4, 0.1);
     const winL = new THREE.Mesh(windowGeo, windowMat);
@@ -406,7 +437,10 @@ export class ProceduralMeshFactory {
       }
     });
 
-    return group;
+    return {
+      houseMesh: group,
+      doorPivot: doorPivot
+    };
   }
 
   // --- AUTO-RICKSHAW VEHICLE GENERATOR ---

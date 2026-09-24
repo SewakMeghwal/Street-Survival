@@ -4,13 +4,14 @@ import { ProceduralMeshFactory } from '../utils/ProceduralMeshFactory.js';
 /**
  * Buildings.js
  * Generates neighborhood houses, market stalls, and industrial sheds across Survival Nagar.
- * Automatically registers bounding box colliders with CollisionSystem.
+ * Registers colliders and interactive entrance doors.
  */
 
 export class Buildings {
   constructor(scene, collisionSystem) {
     this.scene = scene;
     this.collisionSystem = collisionSystem;
+    this.houseDoors = [];
   }
 
   buildNeighborhood() {
@@ -20,12 +21,13 @@ export class Buildings {
     for (let x = -100; x <= 100; x += 25) {
       if (Math.abs(x) < 15) continue; // Keep main avenue clear
       const color = wallColors[Math.abs(x / 25) % wallColors.length];
-      const house = ProceduralMeshFactory.createIndianHouse(12, 8, 14, color);
-      house.position.set(x, 0, 35);
-      this.scene.add(house);
+      const { houseMesh, doorPivot } = ProceduralMeshFactory.createIndianHouse(12, 8, 14, color);
+      houseMesh.position.set(x, 0, 35);
+      this.scene.add(houseMesh);
+      if (doorPivot) this.houseDoors.push(doorPivot);
 
       if (this.collisionSystem) {
-        this.collisionSystem.addMeshCollider(house, 'building');
+        this.collisionSystem.addMeshCollider(houseMesh, 'building');
       }
     }
 
@@ -33,13 +35,14 @@ export class Buildings {
     for (let x = -100; x <= 100; x += 25) {
       if (Math.abs(x) < 15) continue;
       const color = wallColors[(Math.abs(x / 25) + 2) % wallColors.length];
-      const house = ProceduralMeshFactory.createIndianHouse(12, 8, 14, color);
-      house.position.set(x, 0, -35);
-      house.rotation.y = Math.PI;
-      this.scene.add(house);
+      const { houseMesh, doorPivot } = ProceduralMeshFactory.createIndianHouse(12, 8, 14, color);
+      houseMesh.position.set(x, 0, -35);
+      houseMesh.rotation.y = Math.PI;
+      this.scene.add(houseMesh);
+      if (doorPivot) this.houseDoors.push(doorPivot);
 
       if (this.collisionSystem) {
-        this.collisionSystem.addMeshCollider(house, 'building');
+        this.collisionSystem.addMeshCollider(houseMesh, 'building');
       }
     }
 
@@ -57,5 +60,13 @@ export class Buildings {
       this.collisionSystem.addMeshCollider(wh1, 'warehouse');
       this.collisionSystem.addMeshCollider(wh2, 'warehouse');
     }
+  }
+
+  animateHomeEntry(isEntering) {
+    // Swing doors open smoothly when entering home
+    this.houseDoors.forEach(door => {
+      const targetAngle = isEntering ? -Math.PI * 0.55 : 0;
+      door.rotation.y = THREE.MathUtils.lerp(door.rotation.y, targetAngle, 0.1);
+    });
   }
 }

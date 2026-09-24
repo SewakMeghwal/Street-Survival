@@ -5,6 +5,7 @@ import { GameLoop } from './GameLoop.js';
 import { CollisionSystem } from '../systems/CollisionSystem.js';
 import { DayNightSystem } from '../systems/DayNightSystem.js';
 import { WeatherSystem } from '../systems/WeatherSystem.js';
+import { ParticleSystem } from '../systems/ParticleSystem.js';
 import { City } from '../world/City.js';
 import { Player } from '../player/Player.js';
 import { ThirdPersonCamera } from '../camera/ThirdPersonCamera.js';
@@ -16,7 +17,7 @@ import { PerformanceMonitor } from '../utils/PerformanceMonitor.js';
 /**
  * Game.js
  * Master game engine class orchestrating WebGL canvas, Three.js renderer,
- * physics, camera, player, AI dog packs, missions, audio, and UI overlays.
+ * physics, camera, player, AI dog packs, particles, missions, audio, and UI overlays.
  */
 
 export class Game {
@@ -49,11 +50,9 @@ export class Game {
   }
 
   initThreeJS() {
-    // 1. Scene
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x87ceeb);
 
-    // 2. Camera
     this.camera = new THREE.PerspectiveCamera(
       GAME_CONFIG.CAMERA.FOV,
       window.innerWidth / window.innerHeight,
@@ -61,7 +60,6 @@ export class Game {
       GAME_CONFIG.CAMERA.FAR
     );
 
-    // 3. WebGL Renderer
     this.renderer = new THREE.WebGLRenderer({
       canvas: this.canvas,
       antialias: true,
@@ -77,6 +75,7 @@ export class Game {
     this.collisionSystem = new CollisionSystem();
     this.dayNightSystem = new DayNightSystem(this.scene);
     this.weatherSystem = new WeatherSystem(this.scene);
+    this.particleSystem = new ParticleSystem(this.scene);
 
     this.city = new City(this.scene, this.collisionSystem, this.dayNightSystem);
     this.player = new Player(this.scene, this.camera, this.collisionSystem, 'male');
@@ -85,8 +84,11 @@ export class Game {
     this.dogManager = new DogManager(this.scene, this.collisionSystem);
     this.missionManager = new MissionManager(this);
 
-    // Hook hit callback to UI damage flash
-    this.player.stats.onHit = () => {
+    // Hook hit callback to particle system & UI damage flash
+    this.player.stats.onHit = (damage) => {
+      if (this.particleSystem && this.player) {
+        this.particleSystem.createHitSpark(this.player.position);
+      }
       if (this.uiManager) this.uiManager.hud.triggerDamageFlash();
     };
 
@@ -114,7 +116,6 @@ export class Game {
       }
     });
 
-    // Pointer lock for mouse camera look on canvas click
     this.canvas.addEventListener('click', () => {
       if (this.state.is(GAME_STATES.PLAYING)) {
         this.canvas.requestPointerLock();
@@ -183,11 +184,22 @@ export class Game {
 
       this.dayNightSystem.update(delta);
       this.weatherSystem.update(delta, this.player.position);
+      this.particleSystem.update(delta);
       this.city.update(delta);
 
-      // Check player in safe zone for HUD banner
+      // Check player in safe zone
       const inSafe = this.city.safeZones.isPositionInSafeZone(this.player.position);
       this.uiManager.hud.setSafeZoneBanner(inSafe);
+
+      // Animate opening home doors when entering safe zone!
+      if (this.city.buildings) {
+        this.city.buildings.animateHomeEntry(inSafe);
+      }
+
+      // Footstep dust particles when running
+      if (this.player.velocity.lengthSq() > 25.0 && Math.random() < 0.3) {
+        this.particleSystem.createDustPuff(this.player.position);
+      }
     }
 
     if (this.uiManager) {
